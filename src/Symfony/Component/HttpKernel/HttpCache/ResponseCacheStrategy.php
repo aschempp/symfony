@@ -37,6 +37,7 @@ class ResponseCacheStrategy implements ResponseCacheStrategyInterface
     private $embeddedResponses = 0;
     private $isNotCacheableResponseEmbedded = false;
     private $age = 0;
+    private $lastModified = null;
     private $flagDirectives = [
         'no-cache' => null,
         'no-store' => null,
@@ -90,6 +91,11 @@ class ResponseCacheStrategy implements ResponseCacheStrategyInterface
         $expires = $response->getExpires();
         $expires = null !== $expires ? (int) $expires->format('U') - (int) $response->getDate()->format('U') : null;
         $this->storeRelativeAgeDirective('expires', $expires >= 0 ? $expires : null, 0, $isHeuristicallyCacheable);
+
+        $lastModified = $response->getLastModified();
+        if (false !== $this->lastModified) {
+            $this->lastModified = $lastModified ? max($this->lastModified, $lastModified) : false;
+        }
     }
 
     /**
@@ -106,11 +112,11 @@ class ResponseCacheStrategy implements ResponseCacheStrategyInterface
         // because some of the response content comes from at least
         // one embedded response (which likely has a different caching strategy).
         $response->setEtag(null);
-        $response->setLastModified(null);
 
         $this->add($response);
 
         $response->headers->set('Age', $this->age);
+        $response->setLastModified($this->lastModified ?: null);
 
         if ($this->isNotCacheableResponseEmbedded) {
             if ($this->flagDirectives['no-store']) {
