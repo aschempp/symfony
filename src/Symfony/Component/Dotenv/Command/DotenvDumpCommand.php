@@ -108,12 +108,16 @@ EOF;
 
         $globalsBackup = [$_SERVER, $_ENV];
         unset($_SERVER[$envKey]);
-        $_ENV = [$envKey => $env];
+        $_ENV = [];
         $_SERVER['SYMFONY_DOTENV_VARS'] = implode(',', array_keys($_SERVER));
 
         try {
             $dotenv->loadEnv($dotenvPath, null, 'dev', $testEnvs);
             unset($_ENV['SYMFONY_DOTENV_VARS']);
+
+            if (!isset($_ENV[$envKey])) {
+                $_ENV[$envKey] = $env;
+            }
 
             return $_ENV;
         } finally {
